@@ -76,7 +76,8 @@ placeController.goTo(new ItemPlace({ id: 1 }));
 ## TODO
 
 * API docs.
-* Testing
+* Testing.
+* More examples.
 
 ## Links
 
