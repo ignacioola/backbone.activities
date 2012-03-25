@@ -1,0 +1,25 @@
+{
+  "author": "Ignacio Olaciregui <ignacioola@gmail.com>",
+  "name": "Backbone.activities",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ignacioola/test.git"
+  },
+  "main": "./dist/backbone.activities.js",
+  "dependencies": {},
+  "devDependencies": {
+    "underscore": "*",
+    "backbone": "*",
+    "mocha": "*",
+    "sinon": "*",
+    "expect.js": "*",
+    "jsdom": "*",
+    "uglify-js": "*",
+    "serve": "*"
+  },
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}

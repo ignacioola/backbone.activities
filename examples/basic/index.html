@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <title>Backbone.activities Example Aplication</title>
+  </head>
+
+  <body>
+    <h1>Backbone.activities Example Application</h1>
+
+    <div id="container">
+      <nav id="navigation-region">
+        <a id="goto-a" href="#">go to A</a> 
+        <a id="goto-b" href="#">go to B</a> 
+      </nav>
+      <div id="main-region"></div>
+      <aside id="list-region"></aside>
+    </div>
+
+    <script src="../../lib/jquery.js"></script>
+    <script src="../../lib/underscore.js"></script>
+    <script src="../../lib/backbone.js"></script>
+
+    <script src="../../dist/backbone.activities.js"></script>
+    <script>
+      var activities = Backbone.activities;
+      var app = new activities.Application();
+
+      var MainDisplayRegion = activities.DisplayRegion.extend({ 
+        el: $("#main-region") 
+      });
+
+      var mainActivityManager = new activities.ActivityManager(MainDisplayRegion);
+      app.register(mainActivityManager);
+
+      var AView = Backbone.View.extend({
+        render: function() {
+          this.$el.html("A view");
+          return this;
+        }
+      });
+
+      var BView = Backbone.View.extend({
+        render: function() {
+          this.$el.html("B view");
+          return this;
+        }
+      });
+
+      var InitPlace = activities.Place.extend({
+        pattern: ""
+      });
+
+      var PlaceA = activities.Place.extend({
+        pattern: "a/:id"
+      });
+
+      var PlaceB = activities.Place.extend({
+        pattern: "b/:id"
+      });
+
+      var AMainActivity = activities.Activity.extend({
+        place: [ PlaceA, InitPlace ],
+
+        start: function(displayRegion) { 
+          displayRegion.show(new AView().render());
+        },
+
+        cancel: function() {
+          console.log("cancel A");
+        },
+
+        stop: function() {
+          console.log("stop A");
+        },
+
+        mayStop: function() {
+          return confirm("are you sure?");
+        }
+      });
+
+      mainActivityManager.register(AMainActivity);
+
+      var BMainActivity = activities.Activity.extend({
+        place: PlaceB,
+
+        start: function(displayRegion) { 
+          displayRegion.show(new BView().render());
+        },
+
+        cancel: function() {
+          console.log("cancel B");
+        },
+
+        stop: function() {
+          console.log("stop B");
+        }
+
+      });
+
+      mainActivityManager.register(BMainActivity);
+
+      var placeController = activities.getPlaceController();
+
+      activities.history.start({ pushState: true, root: '/examples/basic/' });
+
+      $("#goto-a").click(function(ev) {
+        ev.stopPropagation();ev.preventDefault();
+        placeController.goTo(new PlaceA({ id: 1 }));
+      });
+
+      $("#goto-b").click(function(ev) {
+        ev.stopPropagation();ev.preventDefault();
+        placeController.goTo(new PlaceB({ id: 1 }));
+      });
+
+    </script>
+  </body>
+
+</html>

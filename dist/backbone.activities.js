@@ -1,0 +1,600 @@
+(function($) {
+
+    // Initial Setup
+    // -------------
+
+    var root = this,
+        // The top-level namespace
+        activities;
+
+    if (typeof exports !== 'undefined') {
+        activities = exports;
+    } else {
+        activities = root.activities = {};
+    }
+
+    // Current version of the library.
+    activities.VERSION = '0.1.0';
+
+    // Require jquery.
+    if (!$ && (typeof require !== 'undefined')) {
+         root.jQuery = $ = require('jquery');
+    }
+
+    // Require Backbone.
+    if (!root.Backbone && (typeof require !== 'undefined')) {
+        root.Backbone = require('backbone');
+    }
+
+    // Require Underscore.
+    if (!root._ && (typeof require !== 'undefined')) {
+        root._ = require('underscore')._;
+    }
+
+    root.Backbone.activities = activities;
+
+// Helpers
+// -------
+activities.helpers = {};
+
+var getPlaces = function(ActivityClass) {
+    var place = ActivityClass.prototype.place;
+
+    if (!place) {
+        throw new Error("Activity must have a `place` property");
+    }
+
+    if (_.isArray(place)) {
+        return place;
+    }
+    else {
+        return [ place ];
+    }
+};
+
+activities.helpers.extend = Backbone.View.extend;
+activities.helpers.getPlaces = getPlaces;
+// jQuery's `$.when` method treates any non deferred objects that it's passed
+// as a resolved deferred.
+activities.helpers.resolvedPromise = null;
+
+// Event Bus
+// ---------
+//
+// Global eventBus used to communicate between modules.
+var eventBus = {};
+
+_.extend(eventBus, Backbone.Events);
+
+activities.getEventBus = function() {
+    return eventBus;
+};
+
+// activities.History
+// ------------------
+
+// Wrapper for Backbone.History, keeps it as it is only overriding the
+// `loadUrl` method to trigger the 'historyChange' event.
+function History() {
+    return Backbone.History.apply(this, arguments);
+}
+
+_.extend(History.prototype, Backbone.History.prototype, {
+
+    eventBus: eventBus,
+
+    loadUrl: function(fragmentOverride) {
+        var ret = Backbone.History.prototype.loadUrl.apply(this, arguments);
+        var path = this.getFragment();
+
+        this.eventBus.trigger("historyChange", path);
+
+        return true;
+    }
+
+});
+
+activities.History = History;
+activities.history || (activities.history = new History());
+
+// Place Controller
+// ----------------
+var placeController = {
+
+    eventBus: activities.getEventBus(),
+   
+    goTo: function(place) {
+        this.eventBus.trigger("placeChangeRequest", place);
+    }
+
+};
+
+activities.getPlaceController = function() {
+    return placeController;
+}
+
+// activities.Route
+// ----------------
+function Route(pattern) {
+    this.pattern = pattern;
+
+    this._addParamName = _.bind(this._addParamName, this);
+    this.paramNames = [];
+    this.regExp = this._routeToRegExp(pattern);
+}
+
+Route.prototype._routeToRegExp = function(pattern) {
+    var _pattern;
+
+    _pattern = pattern.replace(/:(\w+)/g, this._addParamName);
+
+    return new RegExp('^' + _pattern + '(?=\\?|$)');
+}
+
+Route.prototype._extractParameters = function(path) {
+    var index, match, matches, paramName, params, _len, _ref;
+    params = {};
+    matches = this.regExp.exec(path);
+    
+    _ref = matches.slice(1);
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+        match = _ref[index];
+        paramName = this.paramNames[index];
+        params[paramName] = match;
+    }
+    return params;
+};
+
+Route.prototype._addParamName = function(match, paramName) {
+    this.paramNames.push(paramName);
+    return '([\\w-]+)';
+};
+
+
+Route.prototype.test = function(path) {
+    var matched;
+
+    matched = this.regExp.test(path);
+    if (!matched) return false;
+
+    return true;
+};
+
+activities.Route = Route;
+
+// activities.Place
+// ----------------
+
+function Place(params) {
+    this.params = params;
+
+    this.initialize.apply(this, arguments);
+}
+
+_.extend(Place.prototype, {
+    pattern: null,
+
+    initialize: function() {},
+
+    // Builds a route from our `string` pattern and params `object`.
+    getRoute: function() {
+        var p, path = this.pattern;
+
+        for (p in this.params) {
+            path = path.replace(":" + p, this.params[p]);
+        }
+
+        return path;
+    },
+
+    getParams: function() {
+        return this.params;
+    }
+});
+
+Place.extend = activities.helpers.extend;
+activities.Place = Place;
+
+// activities.Activity
+// -------------------
+function Activity(place) {
+    this.currentPlace = place;
+
+    this.initialize.apply(this, arguments);
+}
+
+_.extend(Activity.prototype, {
+
+    placeController: activities.getPlaceController(),
+    eventBus: activities.getEventBus(),
+                          
+    // override
+    initialize: function(place) {},
+
+    // override
+    start: function(panel) {},
+
+    // override
+    stop: function() {},
+
+    // override
+    cancel: function() {},
+
+    // override
+    mayStop: function() {
+        return true;
+    },
+
+    goTo: function(place) {
+        this.placeController.goTo(place);
+    }
+});
+
+Activity.extend = activities.helpers.extend;
+activities.Activity = Activity;
+// activities.Match
+// ----------------
+
+// Relates an ´Activity´ subclass to a ´Place´ subclass.
+function Match(Place, Activity) {
+    this.Place = Place;
+    this.Activity = Activity;
+
+    // every place must have a ´pattern´
+    this.pattern = Place.prototype.pattern;
+}
+
+_.extend(Match.prototype, {
+
+    // Tests a if a place is instance of our ´Place´ class.
+    test: function(place) {
+        var route, params;
+
+        if (place instanceof this.Place) {
+            return true;
+        } else if (typeof place === "string") {
+            this.route = new activities.Route(this.pattern);
+            
+            if (this.route.test(place)) {
+                return true;
+            }
+        }
+
+
+        return false;
+    },
+
+    // Builds a place from a `string` path.
+    buildPlace: function(path) {
+        var params;
+
+        if (!this.route) {
+            throw new Error("place can only be built when the original place is a string");
+        }
+
+        params = this.route._extractParameters(path);
+        return new this.Place(params);
+    }
+
+});
+
+activities.Match = Match;
+
+// activities.DisplayRegion
+// ------------------------
+var DisplayRegion = function(options) {
+
+    options = options || {};
+
+    // TODO : throw an exception if no el is provided
+    this.setElement(options.el || this.el);
+
+    this.loaded();
+}
+
+_.extend(DisplayRegion.prototype, {
+
+    show: function(view) {
+        if (!this._deferred) {
+            return;
+        }
+
+        this.close();
+
+        if (view instanceof Backbone.View) {
+            this.$el.html(view.el); 
+        } else if (view instanceof $ || typeof view === "string") {
+            this.$el.html(view);
+        } else {
+            throw new TypeError("DisplayRegion#show: invalid type for `view`.");
+        }
+
+        this.resolve();
+    },
+
+    close: function() {
+        this.$el.empty();
+    },
+
+    loaded: function() {
+        var deferred = $.Deferred(),
+            promise = deferred.promise();
+
+        this._deferred = deferred;
+
+        return promise;
+    },
+
+    invalidate: function() {
+        if (this._deferred) {
+            this._deferred.reject();
+            this._deferred = null;
+        }
+    },
+
+    resolve: function() {
+        if (this._deferred) {
+            this._deferred.resolve();
+            this._deferred = null;
+        }
+    },
+
+    setElement: function(element) {
+        this.$el = $(element);
+        this.el = this.$el[0];
+
+        return this;
+    }
+});
+
+DisplayRegion.extend = activities.helpers.extend;
+activities.DisplayRegion = DisplayRegion;
+
+// activities.ActivityManager
+// --------------------------
+function ActivityManager(DisplayRegion) {
+    this.DisplayRegion = DisplayRegion;
+    this._matchs = [];
+}
+
+_.extend(ActivityManager.prototype, {
+
+    eventBus: activities.getEventBus(),
+
+    register: function(ActivityClass) {
+        var i=0, len, PlaceClass, match;
+        var placeClasses = activities.helpers.getPlaces(ActivityClass);
+
+        len = placeClasses.length;
+
+        // Registering in `Backbone.history` a `Route` for every `Place` 
+        // within the registered `Activity`
+        for (; i<len; i++) {
+            PlaceClass = placeClasses[i];
+            match = new activities.Match(PlaceClass, ActivityClass);
+
+            this._matchs.push(match);
+        }
+    },
+
+    // For a given `Place` instance, try to find an activity match.
+    _findMatch: function(place) {
+        var match, _i, _len, _ref;
+
+        _ref = this._matchs;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            match = _ref[_i];
+
+            if (match.test(place)) {
+
+
+                // When history is started we don't have the corresponding
+                // `Place` for the current route, so we try to build it from
+                // the pattern and path.
+                if (typeof place === "string") {
+                    // We replace the 'string' place with an instance of
+                    // `Place`.
+                    place = match.buildPlace(place);
+                }
+
+                return match;
+            }
+        }
+
+        // No match found.
+        return false;
+    },
+
+    reset: function() {
+        this.displayRegion.close();
+        this.currentActivity = null;
+        this._lastMatch = null;
+    },
+
+    // Loads an activity from a place, returns a promise that indicates when
+    // the display region had it's content loaded.
+    load: function(place) {
+        var activity, mayStopNext = true, match,
+            // Helper used to respect the method's interface.
+            resolvedPromise = activities.helpers.resolvedPromise;
+
+        // Try to find an activity to match the current place.
+        match = this._findMatch(place);
+
+        // No match was found so we reset the activity manager.
+        if (!match) {
+            this.reset();
+            return resolvedPromise;
+        }
+
+        // If the new match equals the last match no activity is loaded.
+        if (this._lastMatch === match) {
+            return resolvedPromise;
+        }
+
+        // There's a new found match, so we keep a reference to it.
+        this._lastMatch = match;
+
+        // Create a new activity for the current place.
+        activity = new match.Activity(place);
+
+        // Perform some deactivation tasks over the previous activity.
+        this._deactivate(this.currentActivity);
+
+        // Mark the the activated activity as the current one.
+        this.currentActivity = activity;
+        
+        // Perform some activation tasks for the new activity 
+        return this._activate(activity);
+    },
+
+    _activate: function(activity) {
+        var _self = this;
+
+        this.displayRegion = new this.DisplayRegion();
+
+        // When the activity loads a view within the display region the promise
+        // will be resolved.
+        this._promise = this.displayRegion.loaded();
+
+        // Set a flag indicating that an activity is in the process of being
+        // started.
+        this._startingNext = true;
+
+        // When the an activity is started we unset this flag.
+        $.when(this._promise).then(function() {
+            _self._startingNext = false;
+        });
+
+        // Starting our new activity.
+        activity.start(this.displayRegion);
+        
+        // returning the promise, so the 'loader' can know when the activity
+        // finishes loading.
+        return this._promise;
+    },
+
+    _deactivate: function(activity) {
+        var _self = this;
+
+        if (activity) {
+            // The current activity is in the process of being started.
+            if (this._startingNext) {
+                // This is to prevent any possible attemp to set this
+                // displayRegion's content by calling it's 'show' method.
+                this.displayRegion.invalidate();
+                // There's an Activity in the process of being started, so we
+                // should cancel it before starting the next activity.
+                activity.cancel();
+            } else {
+                // Stop the running `Activity`.
+                activity.stop();
+            }
+        }
+    },
+
+    mayStopCurrentActivity: function() {
+
+        if (!this.currentActivity || this._startingNext) {
+            return true;
+        }
+
+        return this.currentActivity.mayStop();
+    }
+
+});
+
+activities.ActivityManager = ActivityManager;
+// activities.Application
+// ----------------------
+function Application() {
+    this._managers = [];
+
+    //this._onPlaceChangeRequest = _(this._onPlaceChangeRequest).bind(this);
+    //this._onHistoryChange = _(this._onHistoryChange).bind(this);
+
+    this.bindEvents();
+}
+
+_.extend(Application.prototype, Backbone.Events, {
+
+    eventBus: activities.getEventBus(),
+
+    bindEvents: function() {
+        this.eventBus.bind("placeChangeRequest", this._onPlaceChangeRequest, this);
+        this.eventBus.bind("historyChange", this._onHistoryChange, this);
+    },
+
+    register: function(manager) {
+        this._managers.push(manager);
+    },
+
+    _mayStop: function() {
+        var _i, _len=this._managers.length, manager;
+
+        for (_i=0; _i<_len; _i++) {
+            manager = this._managers[_i];
+
+            if (!manager.mayStop()) {
+                return false;
+            }
+        }
+
+        return true;
+    },
+
+    _onHistoryChange: function(path) {
+        this._triggerPlaceChange(path);
+    },
+
+    _onPlaceChangeRequest: function(place) {
+
+        // Our activity managers didn't let us load a new place.
+        if (!this._mayLoadPlace()) {
+            return;
+        }
+
+        this._triggerPlaceChange(place);
+
+        // Trigger a url change (without triggerring the `route` event.
+        activities.history.navigate(place.getRoute(), { navigate: false });
+    },
+
+    _mayLoadPlace: function() {
+        var self = this, _i, _len=this._managers.length, 
+            manager;
+
+        // First check if we may stop all current activities
+        for (_i=0; _i<_len; _i++) {
+            manager = this._managers[_i];
+
+            if (!manager.mayStopCurrentActivity()) {
+                return false;
+            }
+        }
+
+        return true;
+    },
+
+    _triggerPlaceChange: function(place) {
+        var self = this, _i, _len=this._managers.length, 
+            manager, promise, promises=[];
+
+        this.trigger("beforePlaceChange");
+
+        // Try to load an activity in each activity manager
+        for (_i=0; _i<_len; _i++) {
+            manager = this._managers[_i];
+            promise = manager.load(place);
+            promises.push(promise);
+        }
+
+        // When all promises are resolved, we return a deferred.
+        return $.when.apply(null, promises).then(function() {
+            self.trigger("placeChange", place);
+        });
+    }
+});
+
+activities.Application = Application;
+}).call(this, this.jQuery || this.Zepto);
