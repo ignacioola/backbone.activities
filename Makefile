@@ -4,3 +4,10 @@ build: $(SRC)
 	cat $^ > dist/backbone.activities.js
 	./node_modules/uglify-js/bin/uglifyjs dist/backbone.activities.js > dist/backbone.activities.min.js
 
+test:
+	@./node_modules/.bin/mocha \
+		--reporter list \
+		--growl \
+		test/tests.js
+
+.PHONY: test

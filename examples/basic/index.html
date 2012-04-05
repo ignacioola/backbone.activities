@@ -64,7 +64,7 @@
         place: [ PlaceA, InitPlace ],
 
         start: function(displayRegion) { 
-          displayRegion.show(new AView().render());
+          displayRegion.show(this, new AView().render());
         },
 
         cancel: function() {
