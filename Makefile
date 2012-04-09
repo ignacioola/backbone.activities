@@ -10,4 +10,12 @@ test:
 		--growl \
 		test/tests.js
 
+test-debug:
+	make build
+	@./node_modules/.bin/mocha \
+		--reporter list \
+		--growl \
+		debug \
+		test/tests.js
+
 .PHONY: test

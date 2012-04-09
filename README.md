@@ -9,28 +9,26 @@ work as users expect. It can be also used for MVP development.
 
 ## How to use
 
-1\. Create an activities application.
+Create an activities application.
 
 ```javascript
 var app = new Backbone.activities.Application();
 ```
 
-2\. Create DisplayRegion classes.
+Create a DisplayRegion.
 
 ```javascript
-var mainDisplayRegion = Backbone.activities.DisplayRegion.extend({
-    el:$("#main-region"))
-});
+var mainDisplayRegion = new Backbone.activities.DisplayRegion($("#main-region"));
 ```
 
-3\. Create an ActivityManager for each display region.
+Create an ActivityManager for each display region.
 
 ```javascript
 var mainActivityManager = new Backbone.activities.ActivityManager(mainDisplayRegion);
 app.register(mainActivityManager);
 ```
 
-4\. Create Place and Activity classes.
+Create Place and Activity classes.
 
 ```javascript
 var InitPlace = Backbone.activities.Place.extend({
@@ -54,19 +52,19 @@ var ItemMainActivity = Backbone.activities.Activity.extend({
 });
 ```
 
-5\. Register your activities.
+Register your activities.
 
 ```javascript
 mainActivityManager.register(ItemMainActivity);
 ```
 
-6\. Start history tracking.
+Start history tracking.
 
 ```javascript
 Backbone.activities.history.start({ pushState: true });
 ```
 
-7\. Trigger a place and watch your content change
+Trigger a place and watch your content change
 
 ```javascript
 var placeController = Backbone.activities.getPlaceController();

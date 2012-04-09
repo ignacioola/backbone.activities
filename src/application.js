@@ -3,19 +3,21 @@
 function Application() {
     this._managers = [];
 
-    //this._onPlaceChangeRequest = _(this._onPlaceChangeRequest).bind(this);
-    //this._onHistoryChange = _(this._onHistoryChange).bind(this);
-
-    this.bindEvents();
+    this._bindEvents();
 }
 
 _.extend(Application.prototype, Backbone.Events, {
 
     eventBus: activities.getEventBus(),
 
-    bindEvents: function() {
+    _bindEvents: function() {
         this.eventBus.bind("placeChangeRequest", this._onPlaceChangeRequest, this);
         this.eventBus.bind("historyChange", this._onHistoryChange, this);
+    },
+
+    _unbindEvents: function() {
+        this.eventBus.unbind("placeChangeRequest", this._onPlaceChangeRequest);
+        this.eventBus.unbind("historyChange", this._onHistoryChange);
     },
 
     register: function(manager) {
@@ -49,8 +51,7 @@ _.extend(Application.prototype, Backbone.Events, {
 
         this._triggerPlaceChange(place);
 
-        // Trigger a url change (without triggerring the `route` event.
-        activities.history.navigate(place.getRoute(), { navigate: false });
+        this._navigate(place);
     },
 
     _mayLoadPlace: function() {
@@ -86,6 +87,11 @@ _.extend(Application.prototype, Backbone.Events, {
         return $.when.apply(null, promises).then(function() {
             self.trigger("placeChange", place);
         });
+    },
+
+    _navigate: function(place) {
+        // Trigger a url change (without triggerring the `route` event.
+        activities.history.navigate(place.getRoute(), { navigate: false });
     }
 });
 

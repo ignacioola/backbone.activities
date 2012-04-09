@@ -6,6 +6,10 @@ require('./env');
 
 describe( 'Backbone.activities', function () {
 
+    var displayRegion = new activities.DisplayRegion($('#main'));
+    var placeController = activities.getPlaceController();
+    var FakePlace = activities.Place.extend({ pattern: '/fake' });
+
     describe('namespace', function () {
         it('should exist an activities namespace', function () {
             expect( activities ).to.be.a('object');
@@ -16,40 +20,145 @@ describe( 'Backbone.activities', function () {
     describe('activities.DisplayRegion', function() {
 
         beforeEach(function() {
-            this.displayRegion = new activities.DisplayRegion({
-                el: $('#main')
-            });
+            this.displayRegion = new activities.DisplayRegion($('#main'));
         });
 
         it('should exist a DisplayRegion', function() {
             expect( activities.DisplayRegion ).to.be.a('function');
         });
 
-        it('should render the a view', function() {
-            this.displayRegion.show('test');
-            expect( $('#main').html() ).to.equal('test');
+        it('should have set the required element references', function() {
+            expect( this.displayRegion.$el instanceof jQuery ).to.be.ok();
         });
 
-        it('should resolve the deferred when show() called', function(done) {
-
-            $.when(this.displayRegion.loaded()).then(function(d) {
-                expect( true ).to.be.ok();
-                done();
-            });
-
+        it('should render the view', function() {
             this.displayRegion.show('test');
+            expect( $('#main').html() ).to.equal('test');
         });
     });
 
     describe('activities.Application', function () {
-        it('should exist an Application', function () {
+
+        beforeEach(function() {
+            this.app = new activities.Application();
+            this.am = new activities.ActivityManager(displayRegion);
+            this.app.register(this.am);
+        });
+
+        afterEach(function() {
+            this.app._unbindEvents();
+            //delete this.app;
+            //delete this.am;
+        });
+
+        it('should exist an Application class', function () {
             expect( activities.Application ).to.be.a('function');
         });
 
-        it('should set the right url when a placeChangeRequest is triggered',
+        it('should have registered an activity manager.',
             function() {
-                // TODO
+                // this property holds the registered managers.
+                expect( this.app._managers.length ).to.be(1);
             }
         );
+
+        it('should recieve a callback when a place change request is triggered.',
+            sinon.test(function() {
+                var spy = this.spy(this.app, '_onPlaceChangeRequest');
+
+                // Re-binding events because the spy redefines the callback
+                // function.
+                this.app._unbindEvents();
+                this.app._bindEvents();
+
+                // trigger a place change request.
+                placeController.goTo(new FakePlace());
+
+                expect( spy.calledOnce ).to.be( true );
+            })
+        );
+
+        it('should navigate to the given place when a place change is triggered.',
+            sinon.test(function() {
+                var spy = this.spy(this.app, '_navigate'),
+                    place = new FakePlace();
+
+                // trigger a place change request.
+                placeController.goTo(place);
+
+                expect( spy.calledOnce ).to.be( true );
+                expect( spy.calledWith(place) ).to.be( true );
+            })
+        );
+
+        it('should trigger a before place change event.',
+            sinon.test(function() {
+                var spy = this.spy(),
+                    place = new FakePlace();
+
+                this.app.bind("beforePlaceChange", spy);
+
+                // trigger a place change request.
+                placeController.goTo(place);
+
+                expect( spy.calledOnce ).to.be( true );
+            })
+        );
+
+        /*
+        it('should ask all the activity managers for permission to stop the current activity',
+            function() {
+
+            }
+        );
+
+
+        it('should trigger a place change event when all activity manager have loaded their activities.',
+            function() {
+
+            }
+        );
+
+        it('should load a place in each activity manager.',
+            function() {
+
+            }
+        );
+        */
+    });
+    
+    describe('activities.ActivityManager', function() {
+
+        it('should register an activity.', function() {
+
+        });
+        
+        it('should start an activity when a valid place is loaded', function() {
+
+        });
+
+        it('should stop the current activity before a new activity is started', function() {
+            
+        });
+
+        it('should ask the current activity if it may stop before stoping it', function() {
+
+        });
+
+        it('should cancel the current activity if this one is still loading before a new activity is cancelled', function() {
+
+        });
+
+        it('shouldn\'t start/stop/cancel any activity if the place loaded is the same as the last one', function() {
+
+        });
+
+        it('should reset the display region if no match is found.', function() {
+
+        });
+
+        it('should set the view into the display region when the activity finishes', function() {
+
+        });
     });
 });

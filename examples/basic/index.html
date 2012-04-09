@@ -27,11 +27,9 @@
       var activities = Backbone.activities;
       var app = new activities.Application();
 
-      var MainDisplayRegion = activities.DisplayRegion.extend({ 
-        el: $("#main-region") 
-      });
+      var mainDisplayRegion = new activities.DisplayRegion($("#main-region"));
 
-      var mainActivityManager = new activities.ActivityManager(MainDisplayRegion);
+      var mainActivityManager = new activities.ActivityManager(mainDisplayRegion);
       app.register(mainActivityManager);
 
       var AView = Backbone.View.extend({
@@ -63,8 +61,8 @@
       var AMainActivity = activities.Activity.extend({
         place: [ PlaceA, InitPlace ],
 
-        start: function(displayRegion) { 
-          displayRegion.show(this, new AView().render());
+        start: function(display) { 
+            display.setView(new AView());
         },
 
         cancel: function() {
@@ -85,8 +83,8 @@
       var BMainActivity = activities.Activity.extend({
         place: PlaceB,
 
-        start: function(displayRegion) { 
-          displayRegion.show(new BView().render());
+        start: function(display) {
+          display.setView(new BView());
         },
 
         cancel: function() {
@@ -102,6 +100,14 @@
       mainActivityManager.register(BMainActivity);
 
       var placeController = activities.getPlaceController();
+
+      app.bind("beforePlaceChange", function() {
+        console.log("beforePlaceChange");
+      });
+
+      app.bind("placeChange", function() {
+        console.log("placeChange");
+      });
 
       activities.history.start({ pushState: true, root: '/examples/basic/' });
 

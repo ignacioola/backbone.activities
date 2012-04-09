@@ -1,7 +1,7 @@
 // activities.ActivityManager
 // --------------------------
-function ActivityManager(DisplayRegion) {
-    this.DisplayRegion = DisplayRegion;
+function ActivityManager(displayRegion) {
+    this.displayRegion = displayRegion;
     this._matchs = [];
 }
 
@@ -97,13 +97,13 @@ _.extend(ActivityManager.prototype, {
     },
 
     _activate: function(activity) {
-        var _self = this;
-
-        this.displayRegion = new this.DisplayRegion();
+        var _self = this, 
+            // Object that will recieve the activity's callback.
+            protectedDisplay = new ProtectedDisplay(this);
 
         // When the activity loads a view within the display region the promise
         // will be resolved.
-        this._promise = this.displayRegion.loaded();
+        this._promise = protectedDisplay.getPromise();
 
         // Set a flag indicating that an activity is in the process of being
         // started.
@@ -115,7 +115,7 @@ _.extend(ActivityManager.prototype, {
         });
 
         // Starting our new activity.
-        activity.start(this.displayRegion);
+        activity.start(protectedDisplay);
         
         // returning the promise, so the 'loader' can know when the activity
         // finishes loading.
@@ -128,9 +128,6 @@ _.extend(ActivityManager.prototype, {
         if (activity) {
             // The current activity is in the process of being started.
             if (this._startingNext) {
-                // This is to prevent any possible attemp to set this
-                // displayRegion's content by calling it's 'show' method.
-                this.displayRegion.invalidate();
                 // There's an Activity in the process of being started, so we
                 // should cancel it before starting the next activity.
                 activity.cancel();
@@ -142,14 +139,53 @@ _.extend(ActivityManager.prototype, {
     },
 
     mayStopCurrentActivity: function() {
-
         if (!this.currentActivity || this._startingNext) {
             return true;
         }
 
         return this.currentActivity.mayStop();
+    },
+
+    showView: function(view) {
+        if (this.displayRegion) {
+            this.displayRegion.show(view);
+        }
+    },
+
+    getCurrentActivity: function() {
+        return this.currentActivity;
+    },
+
+    getDisplayRegion: function() {
+        return this.displayRegion;
     }
 
+});
+
+var ProtectedDisplay = function(activityManager) {
+    // storing the current activity to compare later
+    this.activity = activityManager.getCurrentActivity();
+    this.activityManager = activityManager;
+
+    this._deferred = $.Deferred();
+    // Promise to inform the activity manager that the activity has finished
+    // loading.
+    this._promise = this._deferred.promise();
+}
+
+_.extend(ProtectedDisplay.prototype, { 
+    setView: function(view) {
+        var activityManager = this.activityManager;
+
+        if (this.activity == activityManager.getCurrentActivity()) {
+            activityManager.showView(view);
+            this._deferred.resolve();
+        }
+    },
+
+    getPromise: function() {
+        return this._promise;
+    }
 });
 
 activities.ActivityManager = ActivityManager;

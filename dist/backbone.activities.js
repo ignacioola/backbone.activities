@@ -84,6 +84,7 @@ _.extend(History.prototype, Backbone.History.prototype, {
     eventBus: eventBus,
 
     loadUrl: function(fragmentOverride) {
+        console.log(this.getFragment(), 'aaaaaaaaaaaaaaaaaaaaaaaaaa');
         var ret = Backbone.History.prototype.loadUrl.apply(this, arguments);
         var path = this.getFragment();
 
@@ -282,61 +283,30 @@ activities.Match = Match;
 
 // activities.DisplayRegion
 // ------------------------
-var DisplayRegion = function(options) {
-
-    options = options || {};
-
-    // TODO : throw an exception if no el is provided
-    this.setElement(options.el || this.el);
-
-    this.loaded();
+var DisplayRegion = function(el) {
+    this.setElement(el);
 }
 
 _.extend(DisplayRegion.prototype, {
 
     show: function(view) {
-        if (!this._deferred) {
-            return;
-        }
-
         this.close();
 
+        // Test if it's a Backbone view.
         if (view instanceof Backbone.View) {
+            // first render the Backbone view.
+            view.render();
+            // Insert the rendered view into de DOM.
             this.$el.html(view.el); 
         } else if (view instanceof $ || typeof view === "string") {
             this.$el.html(view);
         } else {
             throw new TypeError("DisplayRegion#show: invalid type for `view`.");
         }
-
-        this.resolve();
     },
 
     close: function() {
         this.$el.empty();
-    },
-
-    loaded: function() {
-        var deferred = $.Deferred(),
-            promise = deferred.promise();
-
-        this._deferred = deferred;
-
-        return promise;
-    },
-
-    invalidate: function() {
-        if (this._deferred) {
-            this._deferred.reject();
-            this._deferred = null;
-        }
-    },
-
-    resolve: function() {
-        if (this._deferred) {
-            this._deferred.resolve();
-            this._deferred = null;
-        }
     },
 
     setElement: function(element) {
@@ -352,8 +322,8 @@ activities.DisplayRegion = DisplayRegion;
 
 // activities.ActivityManager
 // --------------------------
-function ActivityManager(DisplayRegion) {
-    this.DisplayRegion = DisplayRegion;
+function ActivityManager(displayRegion) {
+    this.displayRegion = displayRegion;
     this._matchs = [];
 }
 
@@ -449,13 +419,13 @@ _.extend(ActivityManager.prototype, {
     },
 
     _activate: function(activity) {
-        var _self = this;
-
-        this.displayRegion = new this.DisplayRegion();
+        var _self = this, 
+            // Object that will recieve the activity's callback.
+            protectedDisplay = new ProtectedDisplay(this);
 
         // When the activity loads a view within the display region the promise
         // will be resolved.
-        this._promise = this.displayRegion.loaded();
+        this._promise = protectedDisplay.getPromise();
 
         // Set a flag indicating that an activity is in the process of being
         // started.
@@ -467,7 +437,7 @@ _.extend(ActivityManager.prototype, {
         });
 
         // Starting our new activity.
-        activity.start(this.displayRegion);
+        activity.start(protectedDisplay);
         
         // returning the promise, so the 'loader' can know when the activity
         // finishes loading.
@@ -480,9 +450,6 @@ _.extend(ActivityManager.prototype, {
         if (activity) {
             // The current activity is in the process of being started.
             if (this._startingNext) {
-                // This is to prevent any possible attemp to set this
-                // displayRegion's content by calling it's 'show' method.
-                this.displayRegion.invalidate();
                 // There's an Activity in the process of being started, so we
                 // should cancel it before starting the next activity.
                 activity.cancel();
@@ -494,14 +461,53 @@ _.extend(ActivityManager.prototype, {
     },
 
     mayStopCurrentActivity: function() {
-
         if (!this.currentActivity || this._startingNext) {
             return true;
         }
 
         return this.currentActivity.mayStop();
+    },
+
+    showView: function(view) {
+        if (this.displayRegion) {
+            this.displayRegion.show(view);
+        }
+    },
+
+    getCurrentActivity: function() {
+        return this.currentActivity;
+    },
+
+    getDisplayRegion: function() {
+        return this.displayRegion;
     }
 
+});
+
+var ProtectedDisplay = function(activityManager) {
+    // storing the current activity to compare later
+    this.activity = activityManager.getCurrentActivity();
+    this.activityManager = activityManager;
+
+    this._deferred = $.Deferred();
+    // Promise to inform the activity manager that the activity has finished
+    // loading.
+    this._promise = this._deferred.promise();
+}
+
+_.extend(ProtectedDisplay.prototype, { 
+    setView: function(view) {
+        var activityManager = this.activityManager;
+
+        if (this.activity == activityManager.getCurrentActivity()) {
+            activityManager.showView(view);
+            this._deferred.resolve();
+        }
+    },
+
+    getPromise: function() {
+        return this._promise;
+    }
 });
 
 activities.ActivityManager = ActivityManager;
@@ -510,19 +516,21 @@ activities.ActivityManager = ActivityManager;
 function Application() {
     this._managers = [];
 
-    //this._onPlaceChangeRequest = _(this._onPlaceChangeRequest).bind(this);
-    //this._onHistoryChange = _(this._onHistoryChange).bind(this);
-
-    this.bindEvents();
+    this._bindEvents();
 }
 
 _.extend(Application.prototype, Backbone.Events, {
 
     eventBus: activities.getEventBus(),
 
-    bindEvents: function() {
+    _bindEvents: function() {
         this.eventBus.bind("placeChangeRequest", this._onPlaceChangeRequest, this);
         this.eventBus.bind("historyChange", this._onHistoryChange, this);
+    },
+
+    _unbindEvents: function() {
+        this.eventBus.unbind("placeChangeRequest", this._onPlaceChangeRequest);
+        this.eventBus.unbind("historyChange", this._onHistoryChange);
     },
 
     register: function(manager) {
@@ -556,8 +564,7 @@ _.extend(Application.prototype, Backbone.Events, {
 
         this._triggerPlaceChange(place);
 
-        // Trigger a url change (without triggerring the `route` event.
-        activities.history.navigate(place.getRoute(), { navigate: false });
+        this._navigate(place);
     },
 
     _mayLoadPlace: function() {
@@ -593,6 +600,11 @@ _.extend(Application.prototype, Backbone.Events, {
         return $.when.apply(null, promises).then(function() {
             self.trigger("placeChange", place);
         });
+    },
+
+    _navigate: function(place) {
+        // Trigger a url change (without triggerring the `route` event.
+        activities.history.navigate(place.getRoute(), { navigate: false });
     }
 });
 
