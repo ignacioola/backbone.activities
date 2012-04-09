@@ -80,3 +80,7 @@ placeController.goTo(new ItemPlace({ id: 1 }));
 ## Links
 
 * [GWT Development with Activities and Places](https://developers.google.com/web-toolkit/doc/latest/DevGuideMvpActivitiesAndPlaces).
+
+## Changelog
+
+* **v0.2.0** Added ProtectedDisplayRegion.
