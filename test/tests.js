@@ -47,8 +47,8 @@ describe( 'Backbone.activities', function () {
 
         afterEach(function() {
             this.app._unbindEvents();
-            //delete this.app;
-            //delete this.am;
+            delete this.app;
+            delete this.am;
         });
 
         it('should exist an Application class', function () {
@@ -105,30 +105,72 @@ describe( 'Backbone.activities', function () {
             })
         );
 
-        /*
         it('should ask all the activity managers for permission to stop the current activity',
-            function() {
+            sinon.test(function() {
+                var dr = new activities.DisplayRegion($("<div>")); 
+                var am = new activities.ActivityManager(dr);
 
-            }
+                this.app.register(am);
+
+                // adding an extra ActivityManager to spy on
+                var spy = this.spy(am, 'mayStopCurrentActivity');
+                // spying on the already loaded ActivityManager
+                var spy2 = this.spy(this.am, 'mayStopCurrentActivity');
+
+                // trigger a place change request.
+                placeController.goTo(new FakePlace);
+
+                expect( spy.calledOnce ).to.be( true );
+                expect( spy2.calledOnce ).to.be( true );
+            })
         );
 
-
         it('should trigger a place change event when all activity manager have loaded their activities.',
-            function() {
+            sinon.test(function() {
+                var dr = new activities.DisplayRegion($("<div>")); 
+                var am = new activities.ActivityManager(dr);
 
-            }
+                var resolvedDeferred = null;
+                var stub = this.stub(am, 'load').returns(resolvedDeferred);
+                var stub2 = this.stub(this.am, 'load').returns(resolvedDeferred);
+
+                this.app.register(am);
+
+                var spy = this.spy();
+                this.app.on('placeChange', spy);
+
+                // trigger a place change request.
+                placeController.goTo(new FakePlace);
+
+                expect( spy.calledOnce ).to.be( true );
+            })
         );
 
         it('should load a place in each activity manager.',
-            function() {
+            sinon.test(function() {
+                var dr = new activities.DisplayRegion($("<div>")); 
+                var am = new activities.ActivityManager(dr);
 
-            }
+                var spy = this.spy(am, 'load');
+                var spy2 = this.spy(this.am, 'load');
+
+                this.app.register(am);
+
+                var place = new FakePlace;
+
+                // trigger a place change request.
+                placeController.goTo( place );
+
+                expect( spy.calledWith(place) ).to.be( true );
+                expect( spy2.calledWith(place) ).to.be( true );
+
+            })
         );
-        */
     });
     
     describe('activities.ActivityManager', function() {
 
+        /*
         it('should register an activity.', function() {
 
         });
@@ -160,5 +202,7 @@ describe( 'Backbone.activities', function () {
         it('should set the view into the display region when the activity finishes', function() {
 
         });
+
+        */
     });
 });

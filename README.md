@@ -6,6 +6,8 @@ on GWT's "Places & Activities" framework. It allows you to create bookmarkeable 
 within your application, thus allowing browser's back button and bookmarks to 
 work as users expect. It can be also used for MVP development.
 
+Check out the [API](https://github.com/ignacioola/backbone.activities/wiki)
+docs.
 
 ## How to use
 
@@ -43,7 +45,7 @@ var ItemMainActivity = Backbone.activities.Activity.extend({
     place: ItemPlace,
 
     start: function(displayRegion) { 
-        displayRegion.show(new ItemView().render());
+        displayRegion.setView(new ItemView().render());
     },
 
     mayStop: function() {
@@ -73,7 +75,6 @@ placeController.goTo(new ItemPlace({ id: 1 }));
 
 ## TODO
 
-* API docs.
 * Testing.
 * More examples.
 

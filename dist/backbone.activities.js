@@ -14,7 +14,7 @@
     }
 
     // Current version of the library.
-    activities.VERSION = '0.1.0';
+    activities.VERSION = '0.2.1';
 
     // Require jquery.
     if (!$ && (typeof require !== 'undefined')) {
@@ -84,7 +84,6 @@ _.extend(History.prototype, Backbone.History.prototype, {
     eventBus: eventBus,
 
     loadUrl: function(fragmentOverride) {
-        console.log(this.getFragment(), 'aaaaaaaaaaaaaaaaaaaaaaaaaa');
         var ret = Backbone.History.prototype.loadUrl.apply(this, arguments);
         var path = this.getFragment();
 
@@ -584,10 +583,18 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _triggerPlaceChange: function(place) {
-        var self = this, _i, _len=this._managers.length, 
-            manager, promise, promises=[];
+        var self = this;
 
         this.trigger("beforePlaceChange");
+
+        this._loadManagers(place, function() {
+            self.trigger("placeChange", place);
+        });
+    },
+
+    _loadManagers: function(place, callback) {
+        var _i, _len=this._managers.length, 
+            manager, promise, promises=[];
 
         // Try to load an activity in each activity manager
         for (_i=0; _i<_len; _i++) {
@@ -596,10 +603,9 @@ _.extend(Application.prototype, Backbone.Events, {
             promises.push(promise);
         }
 
-        // When all promises are resolved, we return a deferred.
-        return $.when.apply(null, promises).then(function() {
-            self.trigger("placeChange", place);
-        });
+        // When all managers loaded their activities we invoke the callback
+        // function.
+        $.when.apply(null, promises).then(callback);
     },
 
     _navigate: function(place) {

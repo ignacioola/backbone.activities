@@ -71,10 +71,18 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _triggerPlaceChange: function(place) {
-        var self = this, _i, _len=this._managers.length, 
-            manager, promise, promises=[];
+        var self = this;
 
         this.trigger("beforePlaceChange");
+
+        this._loadManagers(place, function() {
+            self.trigger("placeChange", place);
+        });
+    },
+
+    _loadManagers: function(place, callback) {
+        var _i, _len=this._managers.length, 
+            manager, promise, promises=[];
 
         // Try to load an activity in each activity manager
         for (_i=0; _i<_len; _i++) {
@@ -83,10 +91,9 @@ _.extend(Application.prototype, Backbone.Events, {
             promises.push(promise);
         }
 
-        // When all promises are resolved, we return a deferred.
-        return $.when.apply(null, promises).then(function() {
-            self.trigger("placeChange", place);
-        });
+        // When all managers loaded their activities we invoke the callback
+        // function.
+        $.when.apply(null, promises).then(callback);
     },
 
     _navigate: function(place) {
