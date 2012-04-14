@@ -185,6 +185,10 @@ _.extend(ProtectedDisplay.prototype, {
 
     getPromise: function() {
         return this._promise;
+    },
+
+    finish: function() {
+        this._deferred.resolve();
     }
 });
 
