@@ -39,7 +39,13 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _onHistoryChange: function(path) {
-        this._triggerPlaceChange(path);
+        var place = this._createPlace(path);
+        
+        if (!place) {
+            this.trigger("placeNotFound", path);
+        }
+
+        this._triggerPlaceChange(place);
     },
 
     _onPlaceChangeRequest: function(place) {
@@ -97,8 +103,30 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _navigate: function(place) {
-        // Trigger a url change (without triggerring the `route` event.
+        this._currentPlace = place;
+
+        // Trigger a url change (without triggerring the `route` event).
         activities.history.navigate(place.getRoute(), { navigate: false });
+    },
+
+    getCurrentPlace: function() {
+        return this._currentPlace;
+    },
+
+    _createPlace: function(path) {
+        var _i, _len=this._managers.length, 
+            manager, place;
+                   
+        for (_i=0; _i<_len; _i++) {
+            manager = this._managers[_i];
+            place = manager._createPlace(path);
+
+            if (place) {
+                break;
+            }
+        }
+
+        return place;
     }
 });
 

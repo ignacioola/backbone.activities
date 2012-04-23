@@ -14,7 +14,7 @@
     }
 
     // Current version of the library.
-    activities.VERSION = '0.2.1';
+    activities.VERSION = '0.2.2';
 
     // Require jquery.
     if (!$ && (typeof require !== 'undefined')) {
@@ -113,6 +113,9 @@ activities.getPlaceController = function() {
     return placeController;
 }
 
+var escapeRegExp  = /[-[\]{}()+?.,\\^$|#\s]/g;
+var namedParam = /:(\w+)/g;
+
 // activities.Route
 // ----------------
 function Route(pattern) {
@@ -126,9 +129,11 @@ function Route(pattern) {
 Route.prototype._routeToRegExp = function(pattern) {
     var _pattern;
 
-    _pattern = pattern.replace(/:(\w+)/g, this._addParamName);
+    _pattern = pattern.replace(escapeRegExp, '\\$&')
+                      .replace(namedParam, this._addParamName);
 
-    return new RegExp('^' + _pattern + '(?=\\?|$)');
+    //return new RegExp('^' + _pattern + '(?=\\?|$)');
+    return new RegExp('^' + _pattern + '$');
 }
 
 Route.prototype._extractParameters = function(path) {
@@ -147,14 +152,16 @@ Route.prototype._extractParameters = function(path) {
 
 Route.prototype._addParamName = function(match, paramName) {
     this.paramNames.push(paramName);
-    return '([\\w-]+)';
+
+    //return '([\\w-]+)';
+    return '([^\/]+)';
 };
 
 
 Route.prototype.test = function(path) {
     var matched;
 
-    matched = this.regExp.test(path);
+    matched = this.regExp.test(escape(path));
     if (!matched) return false;
 
     return true;
@@ -166,7 +173,7 @@ activities.Route = Route;
 // ----------------
 
 function Place(params) {
-    this.params = params;
+    this.params = params || {};
 
     this.initialize.apply(this, arguments);
 }
@@ -189,6 +196,20 @@ _.extend(Place.prototype, {
 
     getParams: function() {
         return this.params;
+    },
+
+    equals: function(place) {
+        if (place instanceof this.constructor && this._equalParams(place)) {
+            return true;
+        }
+
+        return false;
+    },
+
+    _equalParams: function(place) {
+        var params = place.getParams();
+
+        return _.isEqual(params, this.params);
     }
 });
 
@@ -355,7 +376,7 @@ _.extend(ActivityManager.prototype, {
             match = _ref[_i];
 
             if (match.test(place)) {
-
+                /*
 
                 // When history is started we don't have the corresponding
                 // `Place` for the current route, so we try to build it from
@@ -365,6 +386,7 @@ _.extend(ActivityManager.prototype, {
                     // `Place`.
                     place = match.buildPlace(place);
                 }
+                */
 
                 return match;
             }
@@ -374,10 +396,26 @@ _.extend(ActivityManager.prototype, {
         return false;
     },
 
+    _createPlace: function(path) {
+        var match, _i, _len, _ref, place;
+
+        _ref = this._matchs;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            match = _ref[_i];
+
+            if (match.test(path)) {
+                // We create an instance of `Place`.
+                return match.buildPlace(path);
+            }
+        }
+
+        // No match found.
+        return false;
+    },
+
     reset: function() {
-        this.displayRegion.close();
+        this.displayRegion && this.displayRegion.close();
         this.currentActivity = null;
-        this._lastMatch = null;
     },
 
     // Loads an activity from a place, returns a promise that indicates when
@@ -395,14 +433,21 @@ _.extend(ActivityManager.prototype, {
             this.reset();
             return resolvedPromise;
         }
-
-        // If the new match equals the last match no activity is loaded.
-        if (this._lastMatch === match) {
+        
+        // If the new place equals the last one, no activity is loaded.
+        if (place.equals(this._currentPlace)) {
             return resolvedPromise;
         }
 
-        // There's a new found match, so we keep a reference to it.
-        this._lastMatch = match;
+        // The place change did not came from the user but from a
+        // historyChange, so we must build a new `Place`.
+        /*
+        if (typeof place === 'string') {
+            place = match.buildPlace(place);
+        }
+        */
+
+        this._currentPlace = place;
 
         // Create a new activity for the current place.
         activity = new match.Activity(place);
@@ -500,12 +545,16 @@ _.extend(ProtectedDisplay.prototype, {
 
         if (this.activity == activityManager.getCurrentActivity()) {
             activityManager.showView(view);
-            this._deferred.resolve();
+            this._deferred.resolve(activityManager._currentPlace);
         }
     },
 
     getPromise: function() {
         return this._promise;
+    },
+
+    finish: function() {
+        this._deferred.resolve();
     }
 });
 
@@ -551,7 +600,13 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _onHistoryChange: function(path) {
-        this._triggerPlaceChange(path);
+        var place = this._createPlace(path);
+        
+        if (!place) {
+            this.trigger("placeNotFound", path);
+        }
+
+        this._triggerPlaceChange(place);
     },
 
     _onPlaceChangeRequest: function(place) {
@@ -609,8 +664,30 @@ _.extend(Application.prototype, Backbone.Events, {
     },
 
     _navigate: function(place) {
-        // Trigger a url change (without triggerring the `route` event.
+        this._currentPlace = place;
+
+        // Trigger a url change (without triggerring the `route` event).
         activities.history.navigate(place.getRoute(), { navigate: false });
+    },
+
+    getCurrentPlace: function() {
+        return this._currentPlace;
+    },
+
+    _createPlace: function(path) {
+        var _i, _len=this._managers.length, 
+            manager, place;
+                   
+        for (_i=0; _i<_len; _i++) {
+            manager = this._managers[_i];
+            place = manager._createPlace(path);
+
+            if (place) {
+                break;
+            }
+        }
+
+        return place;
     }
 });
 

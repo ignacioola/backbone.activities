@@ -2,7 +2,7 @@
 // ----------------
 
 function Place(params) {
-    this.params = params;
+    this.params = params || {};
 
     this.initialize.apply(this, arguments);
 }
@@ -25,6 +25,20 @@ _.extend(Place.prototype, {
 
     getParams: function() {
         return this.params;
+    },
+
+    equals: function(place) {
+        if (place instanceof this.constructor && this._equalParams(place)) {
+            return true;
+        }
+
+        return false;
+    },
+
+    _equalParams: function(place) {
+        var params = place.getParams();
+
+        return _.isEqual(params, this.params);
     }
 });
 

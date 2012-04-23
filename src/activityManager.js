@@ -34,7 +34,7 @@ _.extend(ActivityManager.prototype, {
             match = _ref[_i];
 
             if (match.test(place)) {
-
+                /*
 
                 // When history is started we don't have the corresponding
                 // `Place` for the current route, so we try to build it from
@@ -44,6 +44,7 @@ _.extend(ActivityManager.prototype, {
                     // `Place`.
                     place = match.buildPlace(place);
                 }
+                */
 
                 return match;
             }
@@ -53,10 +54,26 @@ _.extend(ActivityManager.prototype, {
         return false;
     },
 
+    _createPlace: function(path) {
+        var match, _i, _len, _ref, place;
+
+        _ref = this._matchs;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            match = _ref[_i];
+
+            if (match.test(path)) {
+                // We create an instance of `Place`.
+                return match.buildPlace(path);
+            }
+        }
+
+        // No match found.
+        return false;
+    },
+
     reset: function() {
-        this.displayRegion.close();
+        this.displayRegion && this.displayRegion.close();
         this.currentActivity = null;
-        this._lastMatch = null;
     },
 
     // Loads an activity from a place, returns a promise that indicates when
@@ -74,14 +91,21 @@ _.extend(ActivityManager.prototype, {
             this.reset();
             return resolvedPromise;
         }
-
-        // If the new match equals the last match no activity is loaded.
-        if (this._lastMatch === match) {
+        
+        // If the new place equals the last one, no activity is loaded.
+        if (place.equals(this._currentPlace)) {
             return resolvedPromise;
         }
 
-        // There's a new found match, so we keep a reference to it.
-        this._lastMatch = match;
+        // The place change did not came from the user but from a
+        // historyChange, so we must build a new `Place`.
+        /*
+        if (typeof place === 'string') {
+            place = match.buildPlace(place);
+        }
+        */
+
+        this._currentPlace = place;
 
         // Create a new activity for the current place.
         activity = new match.Activity(place);
@@ -179,7 +203,7 @@ _.extend(ProtectedDisplay.prototype, {
 
         if (this.activity == activityManager.getCurrentActivity()) {
             activityManager.showView(view);
-            this._deferred.resolve();
+            this._deferred.resolve(activityManager._currentPlace);
         }
     },
 

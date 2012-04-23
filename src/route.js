@@ -1,3 +1,6 @@
+var escapeRegExp  = /[-[\]{}()+?.,\\^$|#\s]/g;
+var namedParam = /:(\w+)/g;
+
 // activities.Route
 // ----------------
 function Route(pattern) {
@@ -11,9 +14,11 @@ function Route(pattern) {
 Route.prototype._routeToRegExp = function(pattern) {
     var _pattern;
 
-    _pattern = pattern.replace(/:(\w+)/g, this._addParamName);
+    _pattern = pattern.replace(escapeRegExp, '\\$&')
+                      .replace(namedParam, this._addParamName);
 
-    return new RegExp('^' + _pattern + '(?=\\?|$)');
+    //return new RegExp('^' + _pattern + '(?=\\?|$)');
+    return new RegExp('^' + _pattern + '$');
 }
 
 Route.prototype._extractParameters = function(path) {
@@ -32,14 +37,16 @@ Route.prototype._extractParameters = function(path) {
 
 Route.prototype._addParamName = function(match, paramName) {
     this.paramNames.push(paramName);
-    return '([\\w-]+)';
+
+    //return '([\\w-]+)';
+    return '([^\/]+)';
 };
 
 
 Route.prototype.test = function(path) {
     var matched;
 
-    matched = this.regExp.test(path);
+    matched = this.regExp.test(escape(path));
     if (!matched) return false;
 
     return true;
