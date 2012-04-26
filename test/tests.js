@@ -8,7 +8,8 @@ describe( 'Backbone.activities', function () {
 
     var displayRegion = new activities.DisplayRegion($('#main'));
     var placeController = activities.getPlaceController();
-    var FakePlace = activities.Place.extend({ pattern: '/fake' });
+    var fakePath = '/fake';
+    var FakePlace = activities.Place.extend({ pattern: fakePath });
 
     describe('namespace', function () {
         it('should exist an activities namespace', function () {
@@ -51,6 +52,7 @@ describe( 'Backbone.activities', function () {
             delete this.am;
         });
 
+        /*
         it('should exist an Application class', function () {
             expect( activities.Application ).to.be.a('function');
         });
@@ -164,6 +166,24 @@ describe( 'Backbone.activities', function () {
                 expect( spy.calledWith(place) ).to.be( true );
                 expect( spy2.calledWith(place) ).to.be( true );
 
+            })
+        );
+        */
+
+        it('should call the callback fn with a Place instance when a history change is triggered.',
+            sinon.test(function() {
+                var spy = sinon.spy();
+
+                this.app.on("placeChange", spy);
+                this.app._onHistoryChange(fakePath);
+
+                expect( spy.calledOnce ).to.be(true);
+
+                var args = spy.args[0];
+
+                //expect( args[0] instanceof activities.Place ).to.be( true );
+
+                this.app.off("placeChange", spy );
             })
         );
     });
