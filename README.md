@@ -1,8 +1,6 @@
 Backbone.activities
 ===================
 
-[ UNDER DEVELOPMENT ]
-
 **Backbone.activities** is a framework for browser history management inspired
 on GWT's "Places & Activities" framework. It allows you to create bookmarkeable URLs
 within your application, thus allowing browser's back button and bookmarks to 
