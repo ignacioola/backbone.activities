@@ -17,6 +17,10 @@ var getPlaces = function(ActivityClass) {
     }
 };
 
+var isArray = function(obj) {
+    return _.isArray(obj);
+}
+
 activities.helpers.extend = Backbone.View.extend;
 activities.helpers.getPlaces = getPlaces;
 // jQuery's `$.when` method treates any non deferred objects that it's passed

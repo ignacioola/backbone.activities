@@ -1,7 +1,7 @@
 // activities.ActivityManager
 // --------------------------
 function ActivityManager(displayRegion) {
-    this.displayRegion = displayRegion;
+    this._displayRegion = displayRegion;
     this._matchs = [];
 }
 
@@ -9,14 +9,37 @@ _.extend(ActivityManager.prototype, {
 
     eventBus: activities.getEventBus(),
 
+    // Registers activities to this `ActivityManager`. It can receive a single
+    // `Activity` or an array of them.
     register: function(ActivityClass) {
-        var i=0, len, PlaceClass, match;
-        var placeClasses = activities.helpers.getPlaces(ActivityClass);
+        var i=0, len;
+
+        // If we received an array of activities, register each one.
+        if (isArray(ActivityClass)) {
+            len = ActivityClass.length;
+
+            for (; i<len; i++) {
+                this._register(ActivityClass[i]);
+            }
+
+            return;
+        }
+        
+        // We received a single `Activity` to register if we've got to this
+        // step.
+        return this._register(ActivityClass);
+    },
+
+    // Registers a single `Activity` to this `ActivityManager`.
+    _register: function(ActivityClass) {
+        var i=0, len, PlaceClass, match, placeClasses;
+
+        // We get the activity's place or places.
+        placeClasses = getPlaces(ActivityClass);
 
         len = placeClasses.length;
 
-        // Registering in `Backbone.history` a `Route` for every `Place` 
-        // within the registered `Activity`
+        // Registering a match between an ´Activity´ and a ´Place´.
         for (; i<len; i++) {
             PlaceClass = placeClasses[i];
             match = new activities.Match(PlaceClass, ActivityClass);
@@ -34,18 +57,6 @@ _.extend(ActivityManager.prototype, {
             match = _ref[_i];
 
             if (match.test(place)) {
-                /*
-
-                // When history is started we don't have the corresponding
-                // `Place` for the current route, so we try to build it from
-                // the pattern and path.
-                if (typeof place === "string") {
-                    // We replace the 'string' place with an instance of
-                    // `Place`.
-                    place = match.buildPlace(place);
-                }
-                */
-
                 return match;
             }
         }
@@ -55,16 +66,10 @@ _.extend(ActivityManager.prototype, {
     },
 
     _createPlace: function(path) {
-        var match, _i, _len, _ref, place;
+        var match = this._findMatch(path);
 
-        _ref = this._matchs;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            match = _ref[_i];
-
-            if (match.test(path)) {
-                // We create an instance of `Place`.
-                return match.buildPlace(path);
-            }
+        if (match instanceof activities.Match) {
+            return match.buildPlace(path);
         }
 
         // No match found.
@@ -72,8 +77,9 @@ _.extend(ActivityManager.prototype, {
     },
 
     reset: function() {
-        this.displayRegion && this.displayRegion.close();
-        this.currentActivity = null;
+        this._displayRegion && this._displayRegion.close();
+        this._currentActivity = null;
+        this._currentPlace = null;
     },
 
     // Loads an activity from a place, returns a promise that indicates when
@@ -97,27 +103,24 @@ _.extend(ActivityManager.prototype, {
             return resolvedPromise;
         }
 
-        // The place change did not came from the user but from a
-        // historyChange, so we must build a new `Place`.
-        /*
-        if (typeof place === 'string') {
-            place = match.buildPlace(place);
-        }
-        */
-
+        // Store the current valid `Place` instance.
         this._currentPlace = place;
 
         // Create a new activity for the current place.
-        activity = new match.Activity(place);
+        activity = this._createActivity(match.Activity, place);
 
         // Perform some deactivation tasks over the previous activity.
-        this._deactivate(this.currentActivity);
+        this._deactivate(this._currentActivity);
 
-        // Mark the the activated activity as the current one.
-        this.currentActivity = activity;
+        // Store the new activity as the current one.
+        this._currentActivity = activity;
         
         // Perform some activation tasks for the new activity 
         return this._activate(activity);
+    },
+
+    _createActivity: function(ActivityClass, place) {
+        return new ActivityClass(place);
     },
 
     _activate: function(activity) {
@@ -163,25 +166,31 @@ _.extend(ActivityManager.prototype, {
     },
 
     mayStopCurrentActivity: function() {
-        if (!this.currentActivity || this._startingNext) {
+        // If the current activity is loading it may be stopped.
+        if (!this._currentActivity || this._startingNext) {
             return true;
         }
 
-        return this.currentActivity.mayStop();
+        // Asking the current activity if it may be stopped.
+        return this._currentActivity.mayStop();
     },
 
     showView: function(view) {
-        if (this.displayRegion) {
-            this.displayRegion.show(view);
+        if (this._displayRegion) {
+            this._displayRegion.show(view);
         }
     },
 
     getCurrentActivity: function() {
-        return this.currentActivity;
+        return this._currentActivity;
+    },
+
+    getCurrentPlace: function() {
+        return this._currentPlace;
     },
 
     getDisplayRegion: function() {
-        return this.displayRegion;
+        return this._displayRegion;
     }
 
 });
@@ -217,3 +226,4 @@ _.extend(ProtectedDisplay.prototype, {
 });
 
 activities.ActivityManager = ActivityManager;
+activities.ProtectedDisplay = ProtectedDisplay;
