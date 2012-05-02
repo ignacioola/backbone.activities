@@ -616,8 +616,9 @@ _.extend(Application.prototype, Backbone.Events, {
     _onHistoryChange: function(path) {
         var place = this._createPlace(path);
         
-        if (!place) {
+        if (!(place instanceof activities.Place)) {
             this.trigger("placeNotFound", path);
+            return;
         }
 
         this._triggerPlaceChange(place);

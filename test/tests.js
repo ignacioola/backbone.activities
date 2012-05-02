@@ -8,8 +8,26 @@ describe( 'Backbone.activities', function () {
 
     var displayRegion = new activities.DisplayRegion($('#main'));
     var placeController = activities.getPlaceController();
-    var FakePlace = activities.Place.extend({ pattern: '/fake' });
-    var FakePlace2 = activities.Place.extend({ pattern: '/fake' });
+
+    var fakePath = '/fake';
+    var FakePlace = activities.Place.extend({ pattern: fakePath });
+    var FakePlace2 = activities.Place.extend({ pattern: '/fake2' });
+
+    var FakeActivity = activities.Activity.extend({
+        place: FakePlace
+    });
+
+    var FakeActivity2 = activities.Activity.extend({
+        place: FakePlace2
+    });
+
+    var MultiPlaceFakeActivity = activities.Activity.extend({
+        place: [ FakePlace, FakePlace2 ]
+    });
+
+    var fakePlace = new FakePlace;
+    var fakePlace2 = new FakePlace2;
+
 
     describe('namespace', function () {
         it('should exist an activities namespace', function () {
@@ -167,24 +185,33 @@ describe( 'Backbone.activities', function () {
 
             })
         );
+
+        it('should call the callback fn with a Place instance when a history change is triggered with a valid path.',
+            sinon.test(function() {
+                var spy = sinon.spy();
+
+                this.am.register(FakeActivity);
+                this.app.on("placeChange", spy);
+
+                var stub = this.stub(this.app, '_loadManagers', function(place, callback) {
+                    callback(place);
+                });
+
+                this.app._onHistoryChange(fakePath);
+
+                expect( spy.calledOnce ).to.be( true );
+
+                var args = spy.args[0];
+
+                expect( args[0] instanceof FakePlace ).to.be( true );
+
+                this.app._loadManagers.restore();
+                this.app.off("placeChange", spy );
+            })
+        );
     });
     
     describe('activities.ActivityManager', function() {
-        var FakeActivity = activities.Activity.extend({
-            place: FakePlace
-        });
-
-        var FakeActivity2 = activities.Activity.extend({
-            place: FakePlace2
-        });
-
-        var MultiPlaceFakeActivity = activities.Activity.extend({
-            place: [ FakePlace, FakePlace2 ]
-        });
-
-        var fakePlace = new FakePlace;
-        var fakePlace2 = new FakePlace2;
-
 
         beforeEach(function() {
             this.am = new activities.ActivityManager(displayRegion);
