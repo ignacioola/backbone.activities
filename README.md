@@ -11,28 +11,18 @@ docs.
 
 ## How to use
 
-Create an activities application.
-
 ```javascript
+// Create an activities application.
 var app = new Backbone.activities.Application();
-```
 
-Create a DisplayRegion.
-
-```javascript
+// Create a DisplayRegion.
 var mainDisplayRegion = new Backbone.activities.DisplayRegion($("#main-region"));
-```
 
-Create an ActivityManager for each display region.
-
-```javascript
+// Create an ActivityManager for each display region.
 var mainActivityManager = new Backbone.activities.ActivityManager(mainDisplayRegion);
 app.register(mainActivityManager);
-```
 
-Create Place and Activity classes.
-
-```javascript
+// Create Place and Activity classes.
 var InitPlace = Backbone.activities.Place.extend({
     pattern: ""
 });
@@ -52,17 +42,11 @@ var ItemMainActivity = Backbone.activities.Activity.extend({
         return confirm("Are you sure you want to leave this page?");
     }
 });
-```
 
-Register your activities.
-
-```javascript
+// Register your activities.
 mainActivityManager.register(ItemMainActivity);
-```
 
-Start history tracking.
-
-```javascript
+// Start history tracking.
 Backbone.activities.history.start({ pushState: true });
 ```
 
@@ -71,6 +55,12 @@ Trigger a place and watch your content change
 ```javascript
 var placeController = Backbone.activities.getPlaceController();
 placeController.goTo(new ItemPlace({ id: 1 }));
+```
+
+## Runing the tests
+
+```
+make test
 ```
 
 ## TODO

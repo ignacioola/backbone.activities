@@ -209,12 +209,41 @@ describe( 'Backbone.activities', function () {
                 this.app.off("placeChange", spy );
             })
         );
+
+        it('should ask if it may stop any currently started activity.', sinon.test(function() {
+            var Activity1 = activities.Activity.extend({
+                place: FakePlace2,
+                start: function(display) { display.finish(); },
+                mayStop: function() { return false }
+            });
+
+            this.am.register([Activity1, FakeActivity]);
+
+            var activity1 = new Activity1(new FakePlace2);
+            var spy = this.spy(activity1, 'mayStop');
+            var stub = this.stub(this.am, '_createActivity').returns(activity1);
+
+            this.app._onPlaceChangeRequest(new FakePlace2);
+
+            stub.restore();
+
+            var place = new FakePlace;
+
+            this.app._onPlaceChangeRequest(place);
+            this.app._onPlaceChangeRequest(place);
+
+            expect( spy.calledTwice ).to.be(true);
+
+            spy.restore();
+        }));
     });
     
     describe('activities.ActivityManager', function() {
 
         beforeEach(function() {
+            this.app = new activities.Application();
             this.am = new activities.ActivityManager(displayRegion);
+            this.app.register(this.am);
         });
 
         afterEach(function() {
@@ -383,6 +412,7 @@ describe( 'Backbone.activities', function () {
                 expect( spy.calledWith(view) ).to.be( true );
             }));
         });
+
     });
 
 });
