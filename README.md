@@ -61,13 +61,11 @@ placeController.goTo(new ItemPlace({ id: 1 }));
 
 The `Application` object implements `Backbone.Events` and triggers the following events:
 
-    * 'beforePlaceChange': fired before starting any activity.
+* 'beforePlaceChange': fired before starting any activity.
 
-    * 'placeChange': fired after all the ActivityManagers finished loading
-      their activities.
+* 'placeChange': fired after all the ActivityManagers finished loading their activities.
 
-    * 'placeNotFound': fired when there's no `Place` matching the current
-      route.
+* 'placeNotFound': fired when there's no `Place` matching the current route.
 
 Example: 
 
