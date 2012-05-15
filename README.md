@@ -79,50 +79,8 @@ app.on('placeChange', function(place) {
 
 ### Use your activities as presenters
 
-The MVP pattern helps decouple you business logic, from your rendering logic,
+The MVP pattern helps decouple you business logic from your rendering logic,
 making your application more testeable.
-
-```javascript
-var Activity = activities.Activity.extend({
-    start: function(display) {
-        var view = new MyView();
-
-        view.setPresenter(this);
-        view.render();
-
-        display.setView(view);
-    },
-
-    onItemClick: function(id) {
-
-        this.goTo(new ItemPlace({ id: id }));
-    }
-});
-
-var MyView = Backbone.View.extend({
-    events: {
-        'click li': 'onItemClick'
-    },
-
-    render: function() {
-        // rendering logic
-
-        return this;
-    },
-
-    setPresenter: function(presenter) {
-        this.presenter = presenter;
-    },
-
-    onItemClick: function(ev) {
-        // getId would take from the event, the clicked element's id.
-        var id = getId(ev);
-
-        this.presenter.onItemClick(id);
-    }
-});
-
-```
 
 ### User-validated place loading
 
