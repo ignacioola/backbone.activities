@@ -75,34 +75,6 @@ app.on('placeChange', function(place) {
 });
 ```
 
-## Features
-
-### Use your activities as presenters
-
-The MVP pattern helps decouple you business logic from your rendering logic,
-making your application more testeable.
-
-### User-validated place loading
-
-When a user triggers a new place, he may not completed some task in the current
-one, so for instance you can ask the user for confirmation to load a new
-place if he has unsaved changes.
-
-```javascript
-var MyActivity = activities.Activity.extend({
-    start: function(display) {
-        // custom logic
-    },
-    
-    mayStop: function() {
-        return confirm("Are you sure you want to navigate out of this view?");
-    }
-});
-```
-
-The `mayStop` method will be called when the application wants to load another place
-to ask for the current activity's confirmation.
-
 ## Recommendations
 
 ### Use the command pattern
@@ -157,6 +129,12 @@ var MyActivity = activities.Activity.extend({
 Where the `requestManager` object would be en charge of batching and caching
 requests.
 
+### Use your activities as presenters
+
+The MVP pattern helps decouple you business logic from your rendering logic,
+making your application more testeable.
+
+
 ### Use the stop callback in your activities
 
 Don't forget to unbind from registered events in every activity, by overriding
@@ -189,6 +167,26 @@ combination of:
 
 * MVP pattern for your views.
 
+### User-validated place loading
+
+When a user triggers a new place, he may not completed some task in the current
+one, so for instance you can ask the user for confirmation to load a new
+place if he has unsaved changes.
+
+```javascript
+var MyActivity = activities.Activity.extend({
+    start: function(display) {
+        // custom logic
+    },
+    
+    mayStop: function() {
+        return confirm("Are you sure you want to navigate out of this view?");
+    }
+});
+```
+
+The `mayStop` method will be called when the application wants to load another place
+to ask for the current activity's confirmation.
 
 ## Runing the tests
 
