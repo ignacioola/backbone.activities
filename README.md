@@ -129,12 +129,6 @@ var MyActivity = activities.Activity.extend({
 Where the `requestManager` object would be en charge of batching and caching
 requests.
 
-### Use your activities as presenters
-
-The MVP pattern helps decouple you business logic from your rendering logic,
-making your application more testeable.
-
-
 ### Use the stop callback in your activities
 
 Don't forget to unbind from registered events in every activity, by overriding
@@ -212,5 +206,4 @@ make build
 ## Changelog
 
 * **v0.2.0** Added ProtectedDisplayRegion.
-* **v0.3.0**
-    * `ActivityManager.register` now accepts a list of activities.
+* **v0.3.0** `ActivityManager.register` now accepts a list of activities.
