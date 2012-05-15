@@ -194,11 +194,6 @@ make test
 make build
 ```
 
-## TODO
-
-* Testing.
-* More examples.
-
 ## Links
 
 * [GWT Development with Activities and Places](https://developers.google.com/web-toolkit/doc/latest/DevGuideMvpActivitiesAndPlaces).
