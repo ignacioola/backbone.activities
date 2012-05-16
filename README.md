@@ -9,6 +9,11 @@ work as users expect. It can be also used for MVP development.
 Check out the [API](https://github.com/ignacioola/backbone.activities/wiki)
 docs.
 
+## Download
+
+* Development: [backbone.activities.js](http://github.com)
+* Production: [backbone.activities.min.js](http://github.com)
+
 ## How to use
 
 ```javascript
@@ -61,9 +66,9 @@ placeController.goTo(new ItemPlace({ id: 1 }));
 
 The `Application` object implements `Backbone.Events` and triggers the following events:
 
-* 'beforePlaceChange': fired before starting any activity.
+* 'beforePlaceChange': fired before triggering a place change.
 
-* 'placeChange': fired after all the ActivityManagers finished loading their activities.
+* 'placeChange': fired after a place change and when all the ActivityManagers have finished loading their activities.
 
 * 'placeNotFound': fired when there's no `Place` matching the current route.
 
@@ -77,7 +82,7 @@ app.on('placeChange', function(place) {
 
 ## Recommendations
 
-### Use the command pattern
+### Use the command pattern
 
 If you have several activities running at the same time for a given place, this
 could result in several requests done at the same time.
@@ -129,7 +134,7 @@ var MyActivity = activities.Activity.extend({
 Where the `requestManager` object would be en charge of batching and caching
 requests.
 
-### Use the stop callback in your activities
+### Use the stop callback in your activities
 
 Don't forget to unbind from registered events in every activity, by overriding
 this method.
@@ -151,7 +156,7 @@ var MyActivity = activities.Activity.extend({
 });
 ```
 
-### Always be decoupling
+### Always be decoupling
 
 Have your activities be self-sufficient. They shouldn`t rely on other parts of 
 the application to have their tasks done. You can achieve this using a 
@@ -182,7 +187,14 @@ var MyActivity = activities.Activity.extend({
 The `mayStop` method will be called when the application wants to load another place
 to ask for the current activity's confirmation.
 
-## Runing the tests
+## Requirements
+
+* Backbone v0.9.2
+* Underscore v1.3.1
+* jQuery v1.7.2
+
+
+## Runing the tests
 
 ```
 make test
