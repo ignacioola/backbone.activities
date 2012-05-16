@@ -11,8 +11,8 @@ docs.
 
 ## Download
 
-* Development: [backbone.activities.js](http://github.com)
-* Production: [backbone.activities.min.js](http://github.com)
+* Development: [backbone.activities.js](https://raw.github.com/ignacioola/backbone.activities/master/dist/backbone.activities.min.js)
+* Production: [backbone.activities.min.js](https://raw.github.com/ignacioola/backbone.activities/master/dist/backbone.activities.js)
 
 ## How to use
 
