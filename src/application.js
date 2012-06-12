@@ -54,7 +54,7 @@ _.extend(Application.prototype, Backbone.Events, {
     _onPlaceChangeRequest: function(place) {
 
         // Our activity managers didn't let us load a new place.
-        if (!this._mayLoadPlace()) {
+        if (!this._mayLoadPlace(place)) {
             return;
         }
 
@@ -63,11 +63,16 @@ _.extend(Application.prototype, Backbone.Events, {
         this._navigate(place);
     },
 
-    _mayLoadPlace: function() {
+    _mayLoadPlace: function(place) {
         var self = this, _i, _len=this._managers.length, 
             manager;
 
-        // First check if we may stop all current activities
+        // First check if we are trying to load same place
+        if(place.equals(this._currentPlace)) {
+            return false
+        }
+
+        // Then check if we may stop all current activities
         for (_i=0; _i<_len; _i++) {
             manager = this._managers[_i];
 
