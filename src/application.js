@@ -46,6 +46,8 @@ _.extend(Application.prototype, Backbone.Events, {
             return;
         }
 
+        this._currentPlace = place;
+        
         this._triggerPlaceChange(place);
     },
 
