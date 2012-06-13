@@ -210,7 +210,3 @@ make build
 
 * [GWT Development with Activities and Places](https://developers.google.com/web-toolkit/doc/latest/DevGuideMvpActivitiesAndPlaces).
 
-## Changelog
-
-* **v0.2.0** Added ProtectedDisplayRegion.
-* **v0.3.0** `ActivityManager.register` now accepts a list of activities.
