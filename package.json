@@ -9,7 +9,7 @@
   "main": "./dist/backbone.activities.js",
   "dependencies": {},
   "devDependencies": {
-    "jQuery": "*",
+    "jquery": "*",
     "underscore": "*",
     "backbone": "*",
     "mocha": "*",
