@@ -18,16 +18,11 @@ _.extend(Match.prototype, {
 
         if (place instanceof this.Place) {
             return true;
-        } else if (typeof place === "string") {
-            this.route = new activities.Route(this.pattern);
-            
-            if (this.route.test(place)) {
-                return true;
-            }
         }
+        
+        this.route = new activities.Route(this.pattern);
 
-
-        return false;
+        return this.route.test(place);
     },
 
     // Builds a place from a `string` path.
@@ -38,7 +33,7 @@ _.extend(Match.prototype, {
             throw new Error("place can only be built when the original place is a string");
         }
 
-        params = this.route._extractParameters(path);
+        params = this.route.extractParameters(path);
         return new this.Place(params);
     }
 
