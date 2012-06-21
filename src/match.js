@@ -16,8 +16,12 @@ _.extend(Match.prototype, {
     test: function(place) {
         var route, params;
 
-        if (place instanceof this.Place) {
-            return true;
+        if (place instanceof activities.Place) {
+            if(place instanceof this.Place) {
+                return true;
+            } else {
+                return false;
+            }
         }
         
         this.route = new activities.Route(this.pattern);
