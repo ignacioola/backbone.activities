@@ -14,7 +14,7 @@
     }
 
     // Current version of the library.
-    activities.VERSION = '0.3.0';
+    activities.VERSION = '0.3.1';
 
     // Require jquery.
     if (!$ && (typeof require !== 'undefined')) {

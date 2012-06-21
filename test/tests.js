@@ -236,6 +236,19 @@ describe( 'Backbone.activities', function () {
 
             spy.restore();
         }));
+
+        it("shouldn't load the same place two times in a row.", sinon.test(function() {
+            this.am.register([FakeActivity]);
+
+            var spy = this.spy(this.app, "_triggerPlaceChange");
+
+            this.app._onPlaceChangeRequest(new FakePlace);
+            this.app._onPlaceChangeRequest(new FakePlace);
+
+            expect( spy.calledOnce ).to.be(true);
+            
+            spy.restore();
+        }));
     });
     
     describe('activities.ActivityManager', function() {

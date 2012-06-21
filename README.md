@@ -21,7 +21,7 @@ docs.
 var app = new Backbone.activities.Application();
 
 // Create a DisplayRegion.
-var mainDisplayRegion = new Backbone.activities.DisplayRegion($("#main-region"));
+var mainDisplayRegion = new Backbone.activities.DisplayRegion($("#container"));
 
 // Create an ActivityManager for each display region.
 var mainActivityManager = new Backbone.activities.ActivityManager(mainDisplayRegion);
@@ -210,7 +210,3 @@ make build
 
 * [GWT Development with Activities and Places](https://developers.google.com/web-toolkit/doc/latest/DevGuideMvpActivitiesAndPlaces).
 
-## Changelog
-
-* **v0.2.0** Added ProtectedDisplayRegion.
-* **v0.3.0** `ActivityManager.register` now accepts a list of activities.
