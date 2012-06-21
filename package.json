@@ -20,7 +20,6 @@
     "serve": "*"
   },
   "optionalDependencies": {},
-  "engines": {
-    "node": "*"
-  }
+  "engines": { "node": ">= 0.4.x" },
+  "scripts": { "test": "make test" }
 }
