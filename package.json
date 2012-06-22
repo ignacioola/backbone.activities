@@ -4,7 +4,7 @@
   "version": "0.3.1",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ignacioola/test.git"
+    "url": "git://github.com/ignacioola/backbone.activities.git"
   },
   "main": "./dist/backbone.activities.js",
   "dependencies": {},
