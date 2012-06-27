@@ -14,7 +14,7 @@
     }
 
     // Current version of the library.
-    activities.VERSION = '0.3.0';
+    activities.VERSION = '0.3.1';
 
     // Require jquery.
     if (!$ && (typeof require !== 'undefined')) {
@@ -117,59 +117,87 @@ activities.getPlaceController = function() {
     return placeController;
 }
 
-var escapeRegExp  = /[-[\]{}()+?.,\\^$|#\s]/g;
-var namedParam = /:(\w+)/g;
+/**
+ * Initialize `Route` with the given `path` and `options`.
+ *
+ * Options:
+ *
+ *   - `sensitive`    enable case-sensitive routes
+ *   - `strict`       enable strict matching for trailing slashes
+ *
+ * @param {String} path
+ * @param {Object} options.
+ */
 
-// activities.Route
-// ----------------
-function Route(pattern) {
-    this.pattern = pattern;
-
-    this._addParamName = _.bind(this._addParamName, this);
-    this.paramNames = [];
-    this.regExp = this._routeToRegExp(pattern);
+function Route(path, options) {
+  options = options || {};
+  this.path = path;
+  this.params = {};
+  this.regexp = this.pathRegexp(path
+    , this.keys = []
+    , options.sensitive
+    , options.strict);
 }
 
-Route.prototype._routeToRegExp = function(pattern) {
-    var _pattern;
+/**
+ * Check if this route matches `path`, if so
+ * populate `.params`.
+ *
+ * @param {String} path
+ * @return {Boolean}
+ */
 
-    _pattern = pattern.replace(escapeRegExp, '\\$&')
-                      .replace(namedParam, this._addParamName);
+Route.prototype.test = function(path){
+  var keys = this.keys
+    , params = this.params = []
+    , m = this.regexp.exec(path);
 
-    //return new RegExp('^' + _pattern + '(?=\\?|$)');
-    return new RegExp('^' + _pattern + '$');
-}
+  if (!m) return false;
 
-Route.prototype._extractParameters = function(path) {
-    var index, match, matches, paramName, params, _len, _ref;
-    params = {};
-    matches = this.regExp.exec(path);
-    
-    _ref = matches.slice(1);
-    for (index = 0, _len = _ref.length; index < _len; index++) {
-        match = _ref[index];
-        paramName = this.paramNames[index];
-        params[paramName] = match;
+  for (var i = 1, len = m.length; i < len; ++i) {
+    var key = keys[i - 1];
+
+    var val = 'string' == typeof m[i]
+      ? decodeURIComponent(m[i])
+      : m[i];
+
+    if (key) {
+      params[key.name] = val;
+    } else {
+      params.push(val);
     }
-    return params;
-};
+  }
 
-Route.prototype._addParamName = function(match, paramName) {
-    this.paramNames.push(paramName);
-
-    //return '([\\w-]+)';
-    return '([^\/]+)';
+  return true;
 };
 
 
-Route.prototype.test = function(path) {
-    var matched;
-
-    matched = this.regExp.test(escape(path));
-    if (!matched) return false;
-
-    return true;
+Route.prototype.extractParameters = function(path) {
+    return this.params;
 };
+
+Route.prototype.pathRegexp = function(path, keys, sensitive, strict) {
+  if (path instanceof RegExp) return path;
+  if (Array.isArray(path)) path = '(' + path.join('|') + ')';
+  path = path
+    .concat(strict ? '' : '/?')
+    .replace(/\/\(/g, '(?:/')
+    .replace(/\+/g, '__plus__')
+    .replace(/(\/)?(\.)?:(\w+)(?:(\(.*?\)))?(\?)?/g, function(_, slash, format, key, capture, optional){
+      keys.push({ name: key, optional: !! optional });
+      slash = slash || '';
+      return ''
+        + (optional ? '' : slash)
+        + '(?:'
+        + (optional ? slash : '')
+        + (format || '') + (capture || (format && '([^/.]+?)' || '([^/]+?)')) + ')'
+        + (optional || '');
+    })
+    .replace(/([\/.])/g, '\\$1')
+    .replace(/__plus__/g, '(.+)')
+    .replace(/\*/g, '(.*)');
+  return new RegExp('^' + path + '$', sensitive ? '' : 'i');
+}
 
 activities.Route = Route;
 
@@ -275,18 +303,17 @@ _.extend(Match.prototype, {
     test: function(place) {
         var route, params;
 
-        if (place instanceof this.Place) {
-            return true;
-        } else if (typeof place === "string") {
-            this.route = new activities.Route(this.pattern);
-            
-            if (this.route.test(place)) {
+        if (place instanceof activities.Place) {
+            if(place instanceof this.Place) {
                 return true;
+            } else {
+                return false;
             }
         }
+        
+        this.route = new activities.Route(this.pattern);
 
-
-        return false;
+        return this.route.test(place);
     },
 
     // Builds a place from a `string` path.
@@ -297,7 +324,7 @@ _.extend(Match.prototype, {
             throw new Error("place can only be built when the original place is a string");
         }
 
-        params = this.route._extractParameters(path);
+        params = this.route.extractParameters(path);
         return new this.Place(params);
     }
 
@@ -595,8 +622,27 @@ _.extend(Application.prototype, Backbone.Events, {
         this.eventBus.unbind("historyChange", this._onHistoryChange);
     },
 
-    register: function(manager) {
-        this._managers.push(manager);
+    register: function(managers) {
+        var i = 0,
+            len;
+        if (isArray(managers)) {
+            len = managers.length;
+
+            for (; i<len; i++) {
+                this._register(managers[i]);
+            }
+
+        } else {
+            this._register(managers);
+        }
+    },
+
+    _register: function(manager) {
+        if(manager instanceof activities.ActivityManager) {
+            this._managers.push(manager);
+        } else {
+            throw new Error("No valid ActivityManager.");
+        }
     },
 
     _mayStop: function() {

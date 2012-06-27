@@ -20,8 +20,27 @@ _.extend(Application.prototype, Backbone.Events, {
         this.eventBus.unbind("historyChange", this._onHistoryChange);
     },
 
-    register: function(manager) {
-        this._managers.push(manager);
+    register: function(managers) {
+        var i = 0,
+            len;
+        if (isArray(managers)) {
+            len = managers.length;
+
+            for (; i<len; i++) {
+                this._register(managers[i]);
+            }
+
+        } else {
+            this._register(managers);
+        }
+    },
+
+    _register: function(manager) {
+        if(manager instanceof activities.ActivityManager) {
+            this._managers.push(manager);
+        } else {
+            throw new Error("No valid ActivityManager.");
+        }
     },
 
     _mayStop: function() {
