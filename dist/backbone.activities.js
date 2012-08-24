@@ -708,7 +708,7 @@ _.extend(Application.prototype, Backbone.Events, {
     _triggerPlaceChange: function(place) {
         var self = this;
 
-        this.trigger("beforePlaceChange");
+        this.trigger("beforePlaceChange", place);
 
         this._loadManagers(place, function() {
             self.trigger("placeChange", place);
