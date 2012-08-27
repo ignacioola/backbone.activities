@@ -595,6 +595,10 @@ _.extend(ProtectedDisplay.prototype, {
 
     finish: function() {
         this._deferred.resolve();
+    },
+
+    getRegion: function() {
+        return this.activityManager.getDisplayRegion();
     }
 });
 
