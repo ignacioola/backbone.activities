@@ -6,13 +6,14 @@ var DisplayRegion = function(el) {
 
 _.extend(DisplayRegion.prototype, {
 
-    show: function(view) {
+    display: function(view) {
         this.close();
 
         // Test if it's a Backbone view.
         if (view instanceof Backbone.View) {
             // first render the Backbone view.
             view.render();
+
             // Insert the rendered view into de DOM.
             this.$el.html(view.el); 
         } else if (view instanceof $ || typeof view === "string") {
@@ -24,6 +25,14 @@ _.extend(DisplayRegion.prototype, {
 
     close: function() {
         this.$el.empty();
+    },
+
+    show: function() {
+        this.$el.show();
+    },
+
+    hide: function() {
+        this.$el.hide();
     },
 
     setElement: function(element) {

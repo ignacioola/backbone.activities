@@ -51,7 +51,7 @@ describe( 'Backbone.activities', function () {
         });
 
         it('should render the view.', function() {
-            this.displayRegion.show('test');
+            this.displayRegion.display('test');
             expect( $('#main').html() ).to.equal('test');
         });
     });
@@ -424,6 +424,11 @@ describe( 'Backbone.activities', function () {
 
                 expect( spy.calledWith(view) ).to.be( true );
             }));
+        });
+
+        it("should stop the current activity when a place with no match is loaded", function() {
+            // diferent of when loading an activity with a match, this also
+            // stops the current activity.
         });
 
     });

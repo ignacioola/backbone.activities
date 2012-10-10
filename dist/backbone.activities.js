@@ -340,13 +340,14 @@ var DisplayRegion = function(el) {
 
 _.extend(DisplayRegion.prototype, {
 
-    show: function(view) {
+    display: function(view) {
         this.close();
 
         // Test if it's a Backbone view.
         if (view instanceof Backbone.View) {
             // first render the Backbone view.
             view.render();
+
             // Insert the rendered view into de DOM.
             this.$el.html(view.el); 
         } else if (view instanceof $ || typeof view === "string") {
@@ -358,6 +359,14 @@ _.extend(DisplayRegion.prototype, {
 
     close: function() {
         this.$el.empty();
+    },
+
+    show: function() {
+        this.$el.show();
+    },
+
+    hide: function() {
+        this.$el.hide();
     },
 
     setElement: function(element) {
@@ -450,9 +459,13 @@ _.extend(ActivityManager.prototype, {
     },
 
     reset: function() {
-        this._displayRegion && this._displayRegion.close();
-        this._currentActivity = null;
-        this._currentPlace = null;
+        if (this._displayRegion) {                                                       
+            this._displayRegion.close();                                         
+            this._displayRegion.hide();                                          
+        }                                                                        
+        this._deactivateCurrentActivity();                                       
+        this._currentActivity = null;                                            
+        this._currentPlace = null; 
     },
 
     // Loads an activity from a place, returns a promise that indicates when
@@ -468,8 +481,11 @@ _.extend(ActivityManager.prototype, {
         // No match was found so we reset the activity manager.
         if (!match) {
             this.reset();
+            this._displayRegion.hide();
             return resolvedPromise;
         }
+
+        this._displayRegion.show();
         
         // If the new place equals the last one, no activity is loaded.
         if (place.equals(this._currentPlace)) {
@@ -483,7 +499,7 @@ _.extend(ActivityManager.prototype, {
         activity = this._createActivity(match.Activity, place);
 
         // Perform some deactivation tasks over the previous activity.
-        this._deactivate(this._currentActivity);
+        this._deactivateCurrentActivity();
 
         // Store the new activity as the current one.
         this._currentActivity = activity;
@@ -522,6 +538,10 @@ _.extend(ActivityManager.prototype, {
         return this._promise;
     },
 
+    _deactivateCurrentActivity: function() {
+        this._deactivate(this._currentActivity);
+    },
+
     _deactivate: function(activity) {
         var _self = this;
 
@@ -550,7 +570,7 @@ _.extend(ActivityManager.prototype, {
 
     showView: function(view) {
         if (this._displayRegion) {
-            this._displayRegion.show(view);
+            this._displayRegion.display(view);
         }
     },
 
@@ -572,6 +592,7 @@ var ProtectedDisplay = function(activityManager) {
     // storing the current activity to compare later
     this.activity = activityManager.getCurrentActivity();
     this.activityManager = activityManager;
+    this.region = this.activityManager.getDisplayRegion();
 
     this._deferred = $.Deferred();
     // Promise to inform the activity manager that the activity has finished
@@ -580,12 +601,19 @@ var ProtectedDisplay = function(activityManager) {
 }
 
 _.extend(ProtectedDisplay.prototype, { 
-    setView: function(view) {
+    /**
+     * @param view {Backbone.View|String|Element}
+     * @param resolve {Boolean} optional, determines if the deferred should be resolved.
+     */
+    setView: function(view, resolve) {
         var activityManager = this.activityManager;
 
         if (this.activity == activityManager.getCurrentActivity()) {
             activityManager.showView(view);
-            this._deferred.resolve(activityManager._currentPlace);
+
+            if (typeof resolve === "undefined" || resolve === true) {
+                this._deferred.resolve(activityManager._currentPlace);
+            }
         }
     },
 
